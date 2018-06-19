@@ -54,10 +54,13 @@ struct Projectile {
 
 impl Projectile {
     fn update(self, time_delta_seconds: f64) -> Projectile {
+        let new_pos = self.position.add(self.velocity.times(time_delta_seconds));
+        let new_vel = self.velocity
+            .add(self.acceleration.times(time_delta_seconds));
+        println!("projectile updated to {:?}, {:?}", new_pos, new_vel);
         return Projectile {
-            position: self.position.add(self.velocity.times(time_delta_seconds)),
-            velocity: self.velocity
-                .add(self.acceleration.times(time_delta_seconds)),
+            position: new_pos,
+            velocity: new_vel,
             acceleration: self.acceleration.clone(),
         };
     }
@@ -77,15 +80,19 @@ impl Tank {
     }
 
     fn shoot(self, power: i8) -> Projectile {
+        // TODO: shouldn't be here
+        let gravity = -10.0;
+
         return Projectile {
             position: self.position
                 .add(self.barrel_vector().times(self.barrel_length)),
-            acceleration: vec2(0.0, 0.0),
+            acceleration: vec2(0.0, gravity),
             velocity: self.barrel_vector().times(power.into()),
         };
     }
 
     fn hit(self, projectile: Projectile) -> Tank {
+        println!("i'm hit");
         return Tank {
             health: self.health - 50,
             barrel_angle: self.barrel_angle,
@@ -97,6 +104,53 @@ impl Tank {
     fn barrel_vector(self) -> Vector2d {
         let angle: f64 = self.barrel_angle.into();
         return vec2(angle.to_radians().cos(), angle.to_radians().sin());
+    }
+}
+
+#[derive(Debug, Clone)]
+struct World {
+    wind: i8,
+    tanks: Vec<Tank>,
+    projectiles: Vec<Projectile>,
+}
+
+impl World {
+    fn update(self, time_delta_seconds: f64) -> World {
+        let p2s = &self.projectiles.clone();
+
+        let t2: Vec<Tank> = self.tanks
+            .iter()
+            .map(|t| {
+                let mut tp = t.clone();
+
+                // TODO: move hit detection out
+                // TODO: randomize projectile iteration
+                for p2 in p2s {
+                    let distance = ((tp.position.x - p2.position.x).powi(2)
+                        + (tp.position.y - p2.position.y).powi(2))
+                        .sqrt();
+
+                    println!("distance {}", distance);
+
+                    if distance < 1.0 {
+                        // TODO: kill projectiles after a hit
+                        tp = tp.hit(*p2)
+                    }
+                }
+
+                // TODO: remove dead tanks
+
+                return tp;
+            })
+            .collect();
+        return World {
+            wind: self.wind,
+            tanks: t2,
+            projectiles: self.projectiles
+                .iter() // TODO: remove dead projectiles
+                .map(|p| p.update(time_delta_seconds))
+                .collect(),
+        };
     }
 }
 
@@ -155,7 +209,7 @@ mod tests {
         assert!(projectile.position.y.to_string().starts_with("0.5"));
         assert!(projectile.velocity.x.to_string().starts_with("0.0"));
         assert!(projectile.velocity.y.to_string().starts_with("100"));
-        assert_eq!(projectile.acceleration, vec2(0.0, 0.0));
+        assert_eq!(projectile.acceleration, vec2(0.0, -10.0)); // TODO: move gravity out
     }
 
     #[test]
@@ -191,4 +245,27 @@ mod tests {
         assert!(barrel_unit_vector.x.to_string().starts_with("0.707"));
         assert!(barrel_unit_vector.y.to_string().starts_with("0.707"));
     }
+
+    #[test]
+    fn shoot_up_get_hit_by_own_bullet() {
+        let t1 = Tank {
+            health: 1,
+            barrel_angle: 90,
+            barrel_length: 0.5,
+            position: pos2(0.0, 0.0),
+        };
+
+        let mut w = World {
+            wind: 0,
+            tanks: vec![t1],
+            projectiles: vec![t1.shoot(20)],
+        };
+
+        for _ in 0..200 {
+            w = w.update(0.1);
+        }
+
+        assert!(!w.tanks[0].is_alive());
+    }
+
 }
