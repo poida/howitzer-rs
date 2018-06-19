@@ -2,99 +2,100 @@ fn main() {}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct Position2d {
-    X: f64,
-    Y: f64,
+    x: f64,
+    y: f64,
 }
 
 impl Position2d {
     fn add(self, v: Vector2d) -> Position2d {
         return Position2d {
-            X: self.X + v.X,
-            Y: self.Y + v.Y,
+            x: self.x + v.x,
+            y: self.y + v.y,
         };
     }
 }
 
 fn pos2(x: f64, y: f64) -> Position2d {
-    return Position2d { X: x, Y: y };
+    return Position2d { x: x, y: y };
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct Vector2d {
-    X: f64,
-    Y: f64,
+    x: f64,
+    y: f64,
 }
 
 fn vec2(x: f64, y: f64) -> Vector2d {
-    return Vector2d { X: x, Y: y };
+    return Vector2d { x: x, y: y };
 }
 
 impl Vector2d {
     fn add(self, v: Vector2d) -> Vector2d {
         return Vector2d {
-            X: self.X + v.X,
-            Y: self.Y + v.Y,
+            x: self.x + v.x,
+            y: self.y + v.y,
         };
     }
 
     fn times(self, scalar: f64) -> Vector2d {
         return Vector2d {
-            X: self.X * scalar,
-            Y: self.Y * scalar,
+            x: self.x * scalar,
+            y: self.y * scalar,
         };
     }
 }
 
 #[derive(Debug, Copy, Clone)]
 struct Projectile {
-    Position: Position2d,
-    Velocity: Vector2d,
-    Acceleration: Vector2d,
+    position: Position2d,
+    velocity: Vector2d,
+    acceleration: Vector2d,
 }
 
 impl Projectile {
-    fn update(self, timeDeltaSeconds: f64) -> Projectile {
+    fn update(self, time_delta_seconds: f64) -> Projectile {
         return Projectile {
-            Position: self.Position.add(self.Velocity.times(timeDeltaSeconds)),
-            Velocity: self.Velocity.add(self.Acceleration.times(timeDeltaSeconds)),
-            Acceleration: self.Acceleration.clone(),
+            position: self.position.add(self.velocity.times(time_delta_seconds)),
+            velocity: self.velocity
+                .add(self.acceleration.times(time_delta_seconds)),
+            acceleration: self.acceleration.clone(),
         };
     }
 }
 
 #[derive(Debug, Copy, Clone)]
 struct Tank {
-    Health: i8,
-    BarrelAngle: i8,
-    BarrelLength: f64,
-    Position: Position2d,
+    health: i8,
+    barrel_angle: i8,
+    barrel_length: f64,
+    position: Position2d,
 }
 
 impl Tank {
     fn is_alive(self) -> bool {
-        return self.Health > 0;
+        return self.health > 0;
     }
 
     fn shoot(self, power: i8) -> Projectile {
         return Projectile {
-            Position: self.Position
-                .add(self.barrel_vector().times(self.BarrelLength)),
-            Acceleration: vec2(0.0, 0.0),
-            Velocity: self.barrel_vector().times(power.into()),
+            position: self.position
+                .add(self.barrel_vector().times(self.barrel_length)),
+            acceleration: vec2(0.0, 0.0),
+            velocity: self.barrel_vector().times(power.into()),
         };
     }
 
     fn hit(self, projectile: Projectile) -> Tank {
         return Tank {
-            Health: self.Health - 50,
-            BarrelAngle: self.BarrelAngle,
-            BarrelLength: self.BarrelLength,
-            Position: self.Position,
+            health: self.health - 50,
+            barrel_angle: self.barrel_angle,
+            barrel_length: self.barrel_length,
+            position: self.position,
         };
     }
 
     fn barrel_vector(self) -> Vector2d {
-        let angle: f64 = self.BarrelAngle.into();
+        let angle: f64 = self.barrel_angle.into();
         return vec2(angle.to_radians().cos(), angle.to_radians().sin());
     }
 }
@@ -104,38 +105,38 @@ mod tests {
     use super::*;
 
     #[test]
-    fn updatesPosition() {
+    fn updates_position() {
         let m = Projectile {
-            Position: pos2(0.0, 100.0),
-            Velocity: vec2(100.0, 10.0),
-            Acceleration: vec2(-10.0, -10.0),
+            position: pos2(0.0, 100.0),
+            velocity: vec2(100.0, 10.0),
+            acceleration: vec2(-10.0, -10.0),
         };
 
         let m2 = m.update(1.0);
 
-        assert_eq!(m2.Position, pos2(100.0, 110.0));
-        assert_eq!(m2.Velocity, vec2(90.0, 0.0));
-        assert_eq!(m2.Acceleration, vec2(-10.0, -10.0));
+        assert_eq!(m2.position, pos2(100.0, 110.0));
+        assert_eq!(m2.velocity, vec2(90.0, 0.0));
+        assert_eq!(m2.acceleration, vec2(-10.0, -10.0));
     }
 
     #[test]
-    fn deadTank() {
+    fn dead_tank() {
         let t = Tank {
-            Health: 0,
-            BarrelAngle: 90,
-            BarrelLength: 0.5,
-            Position: pos2(0.0, 0.0),
+            health: 0,
+            barrel_angle: 90,
+            barrel_length: 0.5,
+            position: pos2(0.0, 0.0),
         };
         assert!(t.is_alive() == false);
     }
 
     #[test]
-    fn aliveTank() {
+    fn alive_tank() {
         let t = Tank {
-            Health: 1,
-            BarrelAngle: 90,
-            BarrelLength: 0.5,
-            Position: pos2(0.0, 0.0),
+            health: 1,
+            barrel_angle: 90,
+            barrel_length: 0.5,
+            position: pos2(0.0, 0.0),
         };
         assert!(t.is_alive() == true);
     }
@@ -143,27 +144,27 @@ mod tests {
     #[test]
     fn shoot() {
         let t = Tank {
-            Health: 1,
-            BarrelAngle: 90,
-            BarrelLength: 0.5,
-            Position: pos2(0.0, 0.0),
+            health: 1,
+            barrel_angle: 90,
+            barrel_length: 0.5,
+            position: pos2(0.0, 0.0),
         };
         let power = 100;
         let projectile = t.shoot(power);
-        assert!(projectile.Position.X.to_string().starts_with("0.0"));
-        assert!(projectile.Position.Y.to_string().starts_with("0.5"));
-        assert!(projectile.Velocity.X.to_string().starts_with("0.0"));
-        assert!(projectile.Velocity.Y.to_string().starts_with("100"));
-        assert_eq!(projectile.Acceleration, vec2(0.0, 0.0));
+        assert!(projectile.position.x.to_string().starts_with("0.0"));
+        assert!(projectile.position.y.to_string().starts_with("0.5"));
+        assert!(projectile.velocity.x.to_string().starts_with("0.0"));
+        assert!(projectile.velocity.y.to_string().starts_with("100"));
+        assert_eq!(projectile.acceleration, vec2(0.0, 0.0));
     }
 
     #[test]
     fn hit() {
         let t1 = Tank {
-            Health: 100,
-            BarrelAngle: 90,
-            BarrelLength: 0.5,
-            Position: pos2(0.0, 0.0),
+            health: 100,
+            barrel_angle: 90,
+            barrel_length: 0.5,
+            position: pos2(0.0, 0.0),
         };
 
         let power = 100;
@@ -173,21 +174,21 @@ mod tests {
 
         let t2 = t1.hit(projectile);
 
-        assert_eq!(t2.Health, 50);
+        assert_eq!(t2.health, 50);
     }
 
     #[test]
     fn barrel_vector() {
         let t1 = Tank {
-            Health: 100,
-            BarrelAngle: 45,
-            BarrelLength: 0.5,
-            Position: pos2(0.0, 0.0),
+            health: 100,
+            barrel_angle: 45,
+            barrel_length: 0.5,
+            position: pos2(0.0, 0.0),
         };
 
-        let barrelUnitVector = t1.barrel_vector();
+        let barrel_unit_vector = t1.barrel_vector();
 
-        assert!(barrelUnitVector.X.to_string().starts_with("0.707"));
-        assert!(barrelUnitVector.Y.to_string().starts_with("0.707"));
+        assert!(barrel_unit_vector.x.to_string().starts_with("0.707"));
+        assert!(barrel_unit_vector.y.to_string().starts_with("0.707"));
     }
 }
