@@ -139,6 +139,8 @@ impl World {
                 }
 
                 // TODO: remove dead tanks
+                // TODO: collision with ground
+                // TODO: off left/right map bounds
 
                 return tp;
             })
@@ -266,6 +268,46 @@ mod tests {
         }
 
         assert!(!w.tanks[0].is_alive());
+    }
+
+    #[test]
+    fn angle_shot_shouldnt_immediately_hit_self() {
+        let t1 = Tank {
+            health: 1,
+            barrel_angle: 45,
+            barrel_length: 0.5,
+            position: pos2(0.0, 0.0),
+        };
+
+        let mut w = World {
+            wind: 0,
+            tanks: vec![t1],
+            projectiles: vec![t1.shoot(10)],
+        };
+
+        w = w.update(0.1);
+
+        assert!(w.tanks[0].is_alive());
+    }
+
+    #[test]
+    fn up_shot_shouldnt_immediately_hit_self() {
+        let t1 = Tank {
+            health: 1,
+            barrel_angle: 90,
+            barrel_length: 0.5,
+            position: pos2(0.0, 0.0),
+        };
+
+        let mut w = World {
+            wind: 0,
+            tanks: vec![t1],
+            projectiles: vec![t1.shoot(10)],
+        };
+
+        w = w.update(0.1);
+
+        assert!(w.tanks[0].is_alive());
     }
 
 }
